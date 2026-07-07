@@ -1,0 +1,25 @@
+{
+  "name": "cred2tech-audit-portal",
+  "version": "1.0.0",
+  "description": "Read-only auditor-facing web portal over audit_logs_db for the CISA/CICRA IS audit",
+  "private": true,
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "dev": "NODE_ENV=development node server.js",
+    "build": "next build",
+    "start": "NODE_ENV=production node server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "next": "^15.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "pg": "^8.21.0",
+    "dotenv": "^16.3.1",
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "cookie": "^1.0.2",
+    "ws": "^8.18.0",
+    "recharts": "^2.13.3"
+  }
+}
