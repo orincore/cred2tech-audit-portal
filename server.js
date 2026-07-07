@@ -18,6 +18,7 @@ async function main() {
   const live = attachWebSocketServer(server, pool);
   server.listen(port, () => {
     console.log(JSON.stringify({ level: 'info', app: 'cred2tech-audit-portal', msg: `listening on ${port}` }));
+    if (process.send) process.send('ready');
   });
 
   let shuttingDown = false;
