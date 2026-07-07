@@ -124,11 +124,13 @@ async function rollup24h(pool) {
     WHERE time >= now() - interval '24 hours'
     GROUP BY app
   `);
+  const errorByApp = Object.fromEntries(rows.map((r) => [r.app, Number(r.error_count) || 0]));
   const restartByApp = Object.fromEntries(restartRows.map((r) => [r.app, Number(r.restart_count) || 0]));
-  return rows.map((r) => ({
-    app: r.app,
-    errorCount: Number(r.error_count),
-    restartCount: restartByApp[r.app] || 0,
+  const apps = new Set([...Object.keys(errorByApp), ...Object.keys(restartByApp)]);
+  return Array.from(apps).map((app) => ({
+    app,
+    errorCount: errorByApp[app] || 0,
+    restartCount: restartByApp[app] || 0,
   }));
 }
 
