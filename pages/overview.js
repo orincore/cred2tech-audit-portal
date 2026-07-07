@@ -4,6 +4,7 @@ import Nav from '../src/components/Nav';
 import { requireAuthPage } from '../src/auth/requireAuthPage';
 import { createPool } from '../src/db/pool';
 import { listPm2Health, listSystemHealth, rollup24h } from '../src/db/queries';
+import { serializeRows } from '../src/lib/serialize';
 
 const LineChart = dynamic(() => import('recharts').then((m) => m.LineChart), { ssr: false });
 const Line = dynamic(() => import('recharts').then((m) => m.Line), { ssr: false });
@@ -16,14 +17,6 @@ const ResponsiveContainer = dynamic(() => import('recharts').then((m) => m.Respo
 const STATUS_COLOR = { online: '#16a34a', stopped: '#dc2626', errored: '#dc2626', unknown: '#ca8a04' };
 
 let sharedPool;
-
-// pg returns TIMESTAMPTZ columns as JS Date objects; Next.js's getServerSideProps
-// props must be plain JSON-serializable values, so Date instances need converting
-// to ISO strings before being handed to the page component (otherwise Next throws
-// "Error serializing ... Date objects are not supported" once any row exists).
-function serializeRows(rows) {
-  return rows.map((row) => (row && row.time instanceof Date ? { ...row, time: row.time.toISOString() } : row));
-}
 
 export const getServerSideProps = requireAuthPage(async () => {
   sharedPool = sharedPool || createPool();
