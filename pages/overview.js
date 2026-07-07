@@ -5,6 +5,7 @@ import { requireAuthPage } from '../src/auth/requireAuthPage';
 import { createPool } from '../src/db/pool';
 import { listPm2Health, listSystemHealth, rollup24h } from '../src/db/queries';
 import { serializeRows } from '../src/lib/serialize';
+import { useLiveChannel } from '../src/ws/useLiveChannel';
 
 const LineChart = dynamic(() => import('recharts').then((m) => m.LineChart), { ssr: false });
 const Line = dynamic(() => import('recharts').then((m) => m.Line), { ssr: false });
@@ -43,7 +44,15 @@ function latestPerApp(rows) {
 }
 
 export default function Overview({ pm2Health, systemHealth, rollup }) {
-  const [latest] = useState(() => latestPerApp(pm2Health));
+  const [liveOn, setLiveOn] = useState(true);
+  const [pm2Rows, setPm2Rows] = useState(pm2Health);
+  const latest = latestPerApp(pm2Rows);
+  useLiveChannel(
+    'pm2_health',
+    {},
+    (newRows) => setPm2Rows((current) => [...current, ...newRows].slice(-500)),
+    { enabled: liveOn, catchUpUrl: (afterId) => `/api/pm2-health?afterId=${afterId}` },
+  );
   const chartData = [...systemHealth].reverse().map((r) => ({
     time: new Date(r.time).toLocaleTimeString(),
     cpu: r.cpu_load,
@@ -56,6 +65,9 @@ export default function Overview({ pm2Health, systemHealth, rollup }) {
       <Nav activePage="overview" />
       <main style={{ padding: 24 }}>
         <h1 style={{ fontSize: 20 }}>Overview</h1>
+        <label style={{ marginLeft: 16 }}>
+          <input type="checkbox" checked={liveOn} onChange={(e) => setLiveOn(e.target.checked)} /> Live
+        </label>
         <section style={{ display: 'flex', gap: 16, marginTop: 16, flexWrap: 'wrap' }}>
           {latest.map((app) => (
             <div

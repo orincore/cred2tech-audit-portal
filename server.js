@@ -13,7 +13,9 @@ async function main() {
   const pool = createPool();
   await ensureSchema(pool);
 
+  const { attachWebSocketServer } = require('./src/ws/liveServer');
   const server = createServer((req, res) => handle(req, res));
+  const live = attachWebSocketServer(server, pool);
   server.listen(port, () => {
     console.log(JSON.stringify({ level: 'info', app: 'cred2tech-audit-portal', msg: `listening on ${port}` }));
   });
@@ -24,6 +26,7 @@ async function main() {
     shuttingDown = true;
     console.log(JSON.stringify({ level: 'info', app: 'cred2tech-audit-portal', msg: `received ${signal}, shutting down` }));
     server.close();
+    await live.stop();
     try {
       await pool.end();
     } catch (err) {
