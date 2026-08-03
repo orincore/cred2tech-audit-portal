@@ -1,7 +1,7 @@
 {
   "name": "cred2tech-audit-portal",
   "version": "1.0.0",
-  "description": "Read-only auditor-facing web portal over audit_logs_db for the CISA/CICRA IS audit",
+  "description": "Read-only auditor-facing monitoring portal over audit_logs_db",
   "private": true,
   "engines": {
     "node": ">=18"

@@ -14,7 +14,10 @@ async function listAppLogs(pool, { app, level, q, from, to, afterId, beforeId, l
   const values = [];
   if (app) { values.push(app); clauses.push(`app = $${values.length}`); }
   if (level) { values.push(level); clauses.push(`level = $${values.length}`); }
-  if (q) { values.push(`%${q}%`); clauses.push(`msg ILIKE $${values.length}`); }
+  // meta holds the actual request method/url/status (msg is just the generic
+  // pino-http text "request completed"/"access log"), so search must cover
+  // both or a query for e.g. a URL path silently matches nothing.
+  if (q) { values.push(`%${q}%`); clauses.push(`(msg ILIKE $${values.length} OR meta::text ILIKE $${values.length})`); }
   if (from) { values.push(from); clauses.push(`time >= $${values.length}`); }
   if (to) { values.push(to); clauses.push(`time <= $${values.length}`); }
   if (afterId) { values.push(afterId); clauses.push(`id > $${values.length}`); }

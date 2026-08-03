@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
+import Head from 'next/head';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -30,37 +31,44 @@ export default function Login() {
   }
 
   return (
-    <div style={{ maxWidth: 360, margin: '96px auto', fontFamily: 'system-ui, sans-serif' }}>
-      <h1 style={{ fontSize: 20 }}>CISA Audit Portal</h1>
-      <form onSubmit={onSubmit}>
-        <label style={{ display: 'block', marginTop: 16 }}>
-          Username
-          <input
-            style={{ display: 'block', width: '100%', padding: 8, marginTop: 4 }}
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            autoComplete="username"
-          />
-        </label>
-        <label style={{ display: 'block', marginTop: 16 }}>
-          Password
-          <input
-            type="password"
-            style={{ display: 'block', width: '100%', padding: 8, marginTop: 4 }}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-          />
-        </label>
-        {error && <p style={{ color: '#b91c1c', marginTop: 12 }}>{error}</p>}
-        <button
-          type="submit"
-          disabled={submitting}
-          style={{ marginTop: 20, padding: '8px 16px' }}
-        >
-          {submitting ? 'Signing in…' : 'Sign in'}
-        </button>
-      </form>
+    <div className="login-shell">
+      <Head>
+        <title>Sign in — Monitoring Services</title>
+      </Head>
+      <div className="login-card">
+        <div className="login-seal-row">
+          <span className="seal seal-lg" aria-hidden="true" />
+        </div>
+        <h1 className="login-title">Monitoring Services</h1>
+        <p className="login-subtitle">System Monitoring — Auditor Access</p>
+        <form onSubmit={onSubmit}>
+          <label className="login-field">
+            Username
+            <input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoComplete="username"
+            />
+          </label>
+          <label className="login-field">
+            Password
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+            />
+          </label>
+          {error && <p className="login-error">{error}</p>}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="btn-primary login-submit"
+          >
+            {submitting ? 'Signing in…' : 'Sign in'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

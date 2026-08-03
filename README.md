@@ -1,8 +1,9 @@
 # cred2tech-audit-portal
 
-Read-only, bcrypt+JWT-authenticated web portal for the CISA/CICRA IS audit. Reads
-directly from `audit_logs_db` (populated by the sibling `audit-log-shipper` repo)
-and pushes live updates over WebSocket via Postgres LISTEN/NOTIFY.
+Read-only, bcrypt+JWT-authenticated monitoring portal for internal system and
+application logs. Reads directly from `audit_logs_db` (populated by the sibling
+`audit-log-shipper` repo) and pushes live updates over WebSocket via Postgres
+LISTEN/NOTIFY.
 
 ## Local development
 

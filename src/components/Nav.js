@@ -10,18 +10,24 @@ const LINKS = [
 
 export default function Nav({ activePage }) {
   return (
-    <nav style={{ display: 'flex', gap: 16, padding: '12px 24px', borderBottom: '1px solid #333', fontFamily: 'system-ui, sans-serif' }}>
-      {LINKS.map((link) => (
-        <Link
-          key={link.href}
-          href={link.href}
-          style={{ fontWeight: activePage === link.href.slice(1) ? 700 : 400 }}
-        >
-          {link.label}
-        </Link>
-      ))}
-      <form action="/api/auth/logout" method="POST" style={{ marginLeft: 'auto' }}>
-        <button type="submit" formAction="/api/auth/logout">Sign out</button>
+    <nav className="nav">
+      <span className="nav-mark">
+        <span className="seal" aria-hidden="true" />
+        Monitoring Services
+      </span>
+      <div className="nav-links">
+        {LINKS.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className={`nav-link${activePage === link.href.slice(1) ? ' active' : ''}`}
+          >
+            {link.label}
+          </Link>
+        ))}
+      </div>
+      <form action="/api/auth/logout" method="POST" className="nav-signout">
+        <button type="submit" formAction="/api/auth/logout" className="btn-ghost">Sign out</button>
       </form>
     </nav>
   );

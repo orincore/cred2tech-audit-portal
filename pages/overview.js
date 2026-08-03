@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
+import Head from 'next/head';
 import Nav from '../src/components/Nav';
 import { requireAuthPage } from '../src/auth/requireAuthPage';
 import { createPool } from '../src/db/pool';
@@ -7,15 +8,14 @@ import { listPm2Health, listSystemHealth, rollup24h } from '../src/db/queries';
 import { serializeRows } from '../src/lib/serialize';
 import { useLiveChannel } from '../src/ws/useLiveChannel';
 
-const LineChart = dynamic(() => import('recharts').then((m) => m.LineChart), { ssr: false });
-const Line = dynamic(() => import('recharts').then((m) => m.Line), { ssr: false });
-const XAxis = dynamic(() => import('recharts').then((m) => m.XAxis), { ssr: false });
-const YAxis = dynamic(() => import('recharts').then((m) => m.YAxis), { ssr: false });
-const CartesianGrid = dynamic(() => import('recharts').then((m) => m.CartesianGrid), { ssr: false });
-const Tooltip = dynamic(() => import('recharts').then((m) => m.Tooltip), { ssr: false });
-const ResponsiveContainer = dynamic(() => import('recharts').then((m) => m.ResponsiveContainer), { ssr: false });
+// Loaded as ONE component (not per-subcomponent) — see SystemResourcesChart.js
+// for why wrapping Line/XAxis/etc. individually in dynamic() breaks recharts.
+const SystemResourcesChart = dynamic(() => import('../src/components/SystemResourcesChart'), {
+  ssr: false,
+  loading: () => <p className="tile-stat">Loading chart…</p>,
+});
 
-const STATUS_COLOR = { online: '#16a34a', stopped: '#dc2626', errored: '#dc2626', unknown: '#ca8a04' };
+const STATUS_CLASS = { online: 'status-online', stopped: 'status-stopped', errored: 'status-errored', unknown: 'status-unknown' };
 
 let sharedPool;
 
@@ -61,65 +61,72 @@ export default function Overview({ pm2Health, systemHealth, rollup }) {
   }));
 
   return (
-    <div style={{ fontFamily: 'system-ui, sans-serif' }}>
+    <div className="shell">
+      <Head>
+        <title>Overview — Monitoring Services</title>
+      </Head>
       <Nav activePage="overview" />
-      <main style={{ padding: 24 }}>
-        <h1 style={{ fontSize: 20 }}>Overview</h1>
-        <label style={{ marginLeft: 16 }}>
-          <input type="checkbox" checked={liveOn} onChange={(e) => setLiveOn(e.target.checked)} /> Live
-        </label>
-        <section style={{ display: 'flex', gap: 16, marginTop: 16, flexWrap: 'wrap' }}>
-          {latest.map((app) => (
-            <div
-              key={app.app}
-              style={{
-                border: `2px solid ${STATUS_COLOR[app.status] || STATUS_COLOR.unknown}`,
-                borderRadius: 8, padding: 16, minWidth: 200,
-              }}
-            >
-              <strong>{app.app}</strong>
-              <p>Status: {app.status}</p>
-              <p>Restarts: {app.restarts}</p>
-              <p>CPU: {app.cpu_pct}% · Mem: {app.mem_mb} MB</p>
-            </div>
-          ))}
+      <main className="main">
+        <div className="page-head">
+          <div>
+            <p className="page-eyebrow">System &amp; Application Health</p>
+            <h1 className="page-title">Overview</h1>
+          </div>
+          <div className="page-head-actions">
+            <label className="live-toggle">
+              <input type="checkbox" checked={liveOn} onChange={(e) => setLiveOn(e.target.checked)} /> Live
+            </label>
+          </div>
+        </div>
+
+        <section className="section">
+          <h2 className="section-title">Process status</h2>
+          <div className="tile-row">
+            {latest.map((app) => (
+              <div key={app.app} className="tile">
+                <div className="tile-head">
+                  <span className={`seal ${STATUS_CLASS[app.status] || 'status-unknown'}`} aria-hidden="true" />
+                  <span className="tile-name">{app.app}</span>
+                </div>
+                <p className="tile-stat"><b>{app.status}</b></p>
+                <p className="tile-stat">Restarts: <b>{app.restarts}</b></p>
+                <p className="tile-stat">CPU <b>{app.cpu_pct}%</b> · Mem <b>{app.mem_mb} MB</b></p>
+              </div>
+            ))}
+            {latest.length === 0 && <p className="tile-stat">No process data yet.</p>}
+          </div>
         </section>
 
-        <section style={{ marginTop: 32 }}>
-          <h2 style={{ fontSize: 16 }}>24h rollup</h2>
-          <table style={{ borderCollapse: 'collapse', marginTop: 8 }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign: 'left', padding: 4 }}>App</th>
-                <th style={{ textAlign: 'left', padding: 4 }}>Errors (24h)</th>
-                <th style={{ textAlign: 'left', padding: 4 }}>Restarts (24h)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rollup.map((r) => (
-                <tr key={r.app}>
-                  <td style={{ padding: 4 }}>{r.app}</td>
-                  <td style={{ padding: 4 }}>{r.errorCount}</td>
-                  <td style={{ padding: 4 }}>{r.restartCount}</td>
+        <section className="section">
+          <h2 className="section-title">24h rollup</h2>
+          <div className="ledger-wrap">
+            <table className="ledger">
+              <thead>
+                <tr>
+                  <th>App</th>
+                  <th>Errors (24h)</th>
+                  <th>Restarts (24h)</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rollup.map((r) => (
+                  <tr key={r.app}>
+                    <td className="col-time">{r.app}</td>
+                    <td>{r.errorCount}</td>
+                    <td>{r.restartCount}</td>
+                  </tr>
+                ))}
+                {rollup.length === 0 && (
+                  <tr className="empty-row"><td colSpan={3}>No activity in the last 24 hours.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </section>
 
-        <section style={{ marginTop: 32, height: 300 }}>
-          <h2 style={{ fontSize: 16 }}>System resources</h2>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="time" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="cpu" stroke="#2563eb" dot={false} name="CPU load" />
-              <Line type="monotone" dataKey="mem" stroke="#16a34a" dot={false} name="Mem used %" />
-              <Line type="monotone" dataKey="disk" stroke="#ca8a04" dot={false} name="Disk used %" />
-            </LineChart>
-          </ResponsiveContainer>
+        <section className="section panel" style={{ height: 320 }}>
+          <h2 className="section-title">System resources</h2>
+          <SystemResourcesChart data={chartData} />
         </section>
       </main>
     </div>

@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import Head from 'next/head';
 import Nav from '../src/components/Nav';
 import { requireAuthPage } from '../src/auth/requireAuthPage';
 import { createPool } from '../src/db/pool';
 import { listServerLogs } from '../src/db/queries';
 import { serializeRows } from '../src/lib/serialize';
+import { buildFilterParams } from '../src/lib/filterParams';
 import { useLiveChannel } from '../src/ws/useLiveChannel';
 
 let sharedPool;
@@ -17,7 +19,7 @@ export const getServerSideProps = requireAuthPage(async (context) => {
 export default function ServerLogs({ rows: initialRows, filters }) {
   const [rows, setRows] = useState(initialRows);
   const [form, setForm] = useState(filters);
-  const [liveOn, setLiveOn] = useState(true);
+  const [liveOn, setLiveOn] = useState(!(filters.from || filters.to));
 
   useLiveChannel(
     'server_logs',
@@ -32,20 +34,30 @@ export default function ServerLogs({ rows: initialRows, filters }) {
 
   async function onSubmit(e) {
     e.preventDefault();
-    const params = new URLSearchParams(Object.entries(form).filter(([, v]) => v));
+    if (form.from || form.to) setLiveOn(false);
+    const params = buildFilterParams(form);
     const res = await fetch(`/api/server-logs?${params.toString()}`);
     const body = await res.json();
     setRows(body.rows);
   }
 
-  const exportHref = `/api/server-logs/export?${new URLSearchParams(Object.entries(form).filter(([, v]) => v)).toString()}`;
+  const exportHref = `/api/server-logs/export?${buildFilterParams(form).toString()}`;
 
   return (
-    <div style={{ fontFamily: 'system-ui, sans-serif' }}>
+    <div className="shell">
+      <Head>
+        <title>Server Logs — Monitoring Services</title>
+      </Head>
       <Nav activePage="server-logs" />
-      <main style={{ padding: 24 }}>
-        <h1 style={{ fontSize: 20 }}>Server Logs</h1>
-        <form onSubmit={onSubmit} style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+      <main className="main">
+        <div className="page-head">
+          <div>
+            <p className="page-eyebrow">Activity Log</p>
+            <h1 className="page-title">Server Logs</h1>
+          </div>
+        </div>
+
+        <form onSubmit={onSubmit} className="filter-bar">
           <select value={form.source} onChange={(e) => onFilterChange('source', e.target.value)}>
             <option value="">any source</option>
             <option value="ssh">ssh</option>
@@ -56,31 +68,36 @@ export default function ServerLogs({ rows: initialRows, filters }) {
           <input placeholder="search text" value={form.q} onChange={(e) => onFilterChange('q', e.target.value)} />
           <input type="datetime-local" value={form.from} onChange={(e) => onFilterChange('from', e.target.value)} />
           <input type="datetime-local" value={form.to} onChange={(e) => onFilterChange('to', e.target.value)} />
-          <button type="submit">Filter</button>
-          <a href={exportHref}>Export CSV</a>
-          <label>
+          <button type="submit" className="btn-primary">Filter</button>
+          <a href={exportHref} className="export-link">Export CSV</a>
+          <label className="live-toggle">
             <input type="checkbox" checked={liveOn} onChange={(e) => setLiveOn(e.target.checked)} /> Live
           </label>
         </form>
 
-        <table style={{ borderCollapse: 'collapse', marginTop: 16, width: '100%' }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left', padding: 4 }}>Time</th>
-              <th style={{ textAlign: 'left', padding: 4 }}>Source</th>
-              <th style={{ textAlign: 'left', padding: 4 }}>Message</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.id}>
-                <td style={{ padding: 4 }}>{new Date(r.time).toLocaleString()}</td>
-                <td style={{ padding: 4 }}>{r.source}</td>
-                <td style={{ padding: 4 }}>{r.message}</td>
+        <div className="ledger-wrap">
+          <table className="ledger">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Source</th>
+                <th>Message</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id}>
+                  <td className="col-time">{new Date(r.time).toLocaleString()}</td>
+                  <td>{r.source}</td>
+                  <td>{r.message}</td>
+                </tr>
+              ))}
+              {rows.length === 0 && (
+                <tr className="empty-row"><td colSpan={3}>No log entries match the current filters.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </main>
     </div>
   );

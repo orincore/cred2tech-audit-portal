@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Head from 'next/head';
 import Nav from '../src/components/Nav';
 import { requireAuthPage } from '../src/auth/requireAuthPage';
 import { createPool } from '../src/db/pool';
@@ -24,31 +25,47 @@ export default function ConsentEvents({ rows, filters }) {
   const exportHref = `/api/consent-events/export?${new URLSearchParams(Object.entries(form).filter(([, v]) => v)).toString()}`;
 
   return (
-    <div style={{ fontFamily: 'system-ui, sans-serif' }}>
+    <div className="shell">
+      <Head>
+        <title>Consent &amp; Data Events — Monitoring Services</title>
+      </Head>
       <Nav activePage="consent-events" />
-      <main style={{ padding: 24 }}>
-        <h1 style={{ fontSize: 20 }}>Consent & Data Events</h1>
-        <a href={exportHref}>Export CSV</a>
-        <table style={{ borderCollapse: 'collapse', marginTop: 16, width: '100%' }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left', padding: 4 }}>Time</th>
-              <th style={{ textAlign: 'left', padding: 4 }}>User</th>
-              <th style={{ textAlign: 'left', padding: 4 }}>Purpose</th>
-              <th style={{ textAlign: 'left', padding: 4 }}>Event</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.id}>
-                <td style={{ padding: 4 }}>{new Date(r.time).toLocaleString()}</td>
-                <td style={{ padding: 4 }}>{r.user_id}</td>
-                <td style={{ padding: 4 }}>{r.purpose}</td>
-                <td style={{ padding: 4 }}>{r.event_type}</td>
+      <main className="main">
+        <div className="page-head">
+          <div>
+            <p className="page-eyebrow">Compliance Record</p>
+            <h1 className="page-title">Consent &amp; Data Events</h1>
+          </div>
+          <div className="page-head-actions">
+            <a href={exportHref} className="export-link">Export CSV</a>
+          </div>
+        </div>
+
+        <div className="ledger-wrap">
+          <table className="ledger">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>User</th>
+                <th>Purpose</th>
+                <th>Event</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id}>
+                  <td className="col-time">{new Date(r.time).toLocaleString()}</td>
+                  <td>{r.user_id}</td>
+                  <td>{r.purpose}</td>
+                  <td>{r.event_type}</td>
+                </tr>
+              ))}
+              {rows.length === 0 && (
+                <tr className="empty-row"><td colSpan={4}>No consent events match the current filters.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </main>
     </div>
   );
