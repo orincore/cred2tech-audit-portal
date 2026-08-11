@@ -488,6 +488,41 @@ button, input, select {
 .badge.level-error, .badge.level-fatal { color: #e3897c; }
 .badge.level-warn { color: #e0bd75; }
 
+.badge.status-success .dot { background: var(--verdigris); }
+.badge.status-success { color: var(--verdigris); }
+.badge.status-failed .dot { background: var(--brick); }
+.badge.status-failed { color: #e3897c; }
+
+.field-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-width: 340px;
+}
+
+.field-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--ink-850);
+  color: var(--paper-dim);
+  font-size: 11.5px;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.record-type {
+  color: var(--paper);
+}
+.record-type-sub {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
 .empty-row td {
   padding: 24px 14px;
   color: var(--muted);

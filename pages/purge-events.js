@@ -6,6 +6,7 @@ import { createPool } from '../src/db/pool';
 import { listPurgeEvents } from '../src/db/queries';
 import { maskIdentifier } from '../src/lib/mask';
 import { serializeRows } from '../src/lib/serialize';
+import { friendlyTableName, friendlyFieldLabel } from '../src/lib/purgeLabels';
 
 let sharedPool;
 export const getServerSideProps = requireAuthPage(async (context) => {
@@ -45,27 +46,49 @@ export default function PurgeEvents({ rows, filters }) {
           <table className="ledger">
             <thead>
               <tr>
-                <th>Time</th>
-                <th>Source Table</th>
+                <th>Date &amp; Time</th>
+                <th>Record Type</th>
                 <th>Record ID</th>
                 <th>Customer</th>
-                <th>Fields Purged</th>
-                <th>Files Deleted</th>
-                <th>Status</th>
+                <th>Data Removed</th>
+                <th>Documents Deleted</th>
+                <th>Result</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
-                <tr key={r.id}>
-                  <td className="col-time">{new Date(r.purged_at).toLocaleString()}</td>
-                  <td>{r.source_table}</td>
-                  <td>{r.record_id}</td>
-                  <td>{r.customer_id}</td>
-                  <td>{Array.isArray(r.purged_fields) ? r.purged_fields.join(', ') : ''}</td>
-                  <td>{r.files_deleted ? 'Yes' : 'No'}</td>
-                  <td>{r.status}</td>
-                </tr>
-              ))}
+              {rows.map((r) => {
+                const fields = Array.isArray(r.purged_fields) ? r.purged_fields : [];
+                const isSuccess = String(r.status).toUpperCase() === 'SUCCESS';
+                return (
+                  <tr key={r.id}>
+                    <td className="col-time">{new Date(r.purged_at).toLocaleString()}</td>
+                    <td>
+                      <span className="record-type">{friendlyTableName(r.source_table)}</span>
+                      <span className="record-type-sub">{r.source_table}</span>
+                    </td>
+                    <td>{r.record_id}</td>
+                    <td>{r.customer_id}</td>
+                    <td>
+                      <div className="field-pills">
+                        {fields.length === 0 && <span className="field-pill">None</span>}
+                        {fields.map((f) => (
+                          <span className="field-pill" key={f}>{friendlyFieldLabel(f)}</span>
+                        ))}
+                      </div>
+                    </td>
+                    <td>{r.files_deleted ? 'Yes' : 'No'}</td>
+                    <td>
+                      <span className={`badge ${isSuccess ? 'status-success' : 'status-failed'}`}>
+                        <span className="dot" />
+                        {isSuccess ? 'Completed' : 'Failed'}
+                      </span>
+                      {!isSuccess && r.error_message && (
+                        <span className="record-type-sub">{r.error_message}</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
               {rows.length === 0 && (
                 <tr className="empty-row"><td colSpan={7}>No purge events match the current filters.</td></tr>
               )}
