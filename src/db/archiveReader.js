@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { errorDetails } = require('../lib/errorDetails');
 
 const execFileAsync = promisify(execFile);
 const HOT_WINDOW_DAYS = 90;
@@ -75,7 +76,8 @@ async function fetchArchivedRows({ table, from, to, s3Client, bucket, encryption
         console.error(JSON.stringify({
           level: 'error',
           app: 'cred2tech-audit-portal',
-          msg: `archive fetch failed for ${table}/${day.toISOString().slice(0, 10)}: ${err.message}`,
+          msg: `archive fetch failed for ${table}/${day.toISOString().slice(0, 10)}`,
+          error: errorDetails(err),
         }));
         return [];
       }),

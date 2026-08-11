@@ -2,6 +2,7 @@ import { requireAuthApi } from '../../../src/auth/requireAuthApi';
 import { createPool } from '../../../src/db/pool';
 import { blockIp, logIpBlockAudit } from '../../../src/db/queries';
 import { enforceBlock, isValidIp } from '../../../src/lib/ipBlockEnforcer';
+import { errorDetails } from '../../../src/lib/errorDetails';
 
 const pool = createPool();
 
@@ -24,6 +25,7 @@ export default requireAuthApi(async (req, res, session) => {
     await logIpBlockAudit(pool, { ip, action: 'block', reason, actor });
     res.status(200).json({ ok: true });
   } catch (err) {
+    console.error(JSON.stringify({ level: 'error', app: 'cred2tech-audit-portal', msg: `IP block failed for ${ip}`, error: errorDetails(err) }));
     await logIpBlockAudit(pool, { ip, action: 'block_failed', reason, actor, detail: err.message });
     res.status(500).json({ error: err.message });
   }

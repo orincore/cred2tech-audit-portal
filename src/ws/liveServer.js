@@ -3,6 +3,7 @@ const { Client } = require('pg');
 const {
   listAppLogs, listServerLogs, listPm2Health, listSystemHealth,
 } = require('../db/queries');
+const { errorDetails } = require('../lib/errorDetails');
 
 const CHANNELS = ['app_logs', 'server_logs', 'pm2_health', 'system_health'];
 const LISTERS = {
@@ -72,18 +73,18 @@ function attachWebSocketServer(httpServer, pool) {
         console.log(JSON.stringify({ level: 'info', app: 'cred2tech-audit-portal', msg: 'LISTEN connection established' }));
       })
       .catch((err) => {
-        console.error(JSON.stringify({ level: 'error', app: 'cred2tech-audit-portal', msg: 'LISTEN connect failed: ' + err.message }));
+        console.error(JSON.stringify({ level: 'error', app: 'cred2tech-audit-portal', msg: 'LISTEN connect failed', error: errorDetails(err) }));
         setTimeout(connectListener, RECONNECT_DELAY_MS);
       });
 
     listenClient.on('notification', (msg) => {
       handleNotify(msg.channel).catch((err) => {
-        console.error(JSON.stringify({ level: 'error', app: 'cred2tech-audit-portal', msg: `handleNotify(${msg.channel}) failed: ${err.message}` }));
+        console.error(JSON.stringify({ level: 'error', app: 'cred2tech-audit-portal', msg: `handleNotify(${msg.channel}) failed`, error: errorDetails(err) }));
       });
     });
 
     listenClient.on('error', (err) => {
-      console.error(JSON.stringify({ level: 'error', app: 'cred2tech-audit-portal', msg: 'LISTEN connection error: ' + err.message }));
+      console.error(JSON.stringify({ level: 'error', app: 'cred2tech-audit-portal', msg: 'LISTEN connection error', error: errorDetails(err) }));
     });
 
     listenClient.on('end', () => {

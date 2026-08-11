@@ -1,4 +1,5 @@
 const { Pool } = require('pg');
+const { errorDetails } = require('../lib/errorDetails');
 
 function createPool() {
   const pool = new Pool({
@@ -8,7 +9,7 @@ function createPool() {
     connectionTimeoutMillis: 10000,
   });
   pool.on('error', (err) => {
-    console.error(JSON.stringify({ level: 'error', app: 'cred2tech-audit-portal', msg: 'pg pool error: ' + err.message }));
+    console.error(JSON.stringify({ level: 'error', app: 'cred2tech-audit-portal', msg: 'pg pool error', error: errorDetails(err) }));
   });
   return pool;
 }
