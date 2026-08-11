@@ -5,7 +5,9 @@ const LINKS = [
   { href: '/app-logs', label: 'Application Logs' },
   { href: '/server-logs', label: 'Server Logs' },
   { href: '/consent-events', label: 'Consent & Data Events' },
+  { href: '/purge-events', label: 'Data Purge Events' },
   { href: '/backup-status', label: 'Backup Status' },
+  { href: '/ip-monitoring', label: 'IP Monitoring' },
 ];
 
 export default function Nav({ activePage }) {

@@ -99,6 +99,23 @@ async function listConsentEvents(pool, { eventType, from, to, limit } = {}) {
   return rows;
 }
 
+async function listPurgeEvents(pool, { sourceTable, status, from, to, limit } = {}) {
+  const clauses = [];
+  const values = [];
+  if (sourceTable) { values.push(sourceTable); clauses.push(`source_table = $${values.length}`); }
+  if (status) { values.push(status); clauses.push(`status = $${values.length}`); }
+  if (from) { values.push(from); clauses.push(`purged_at >= $${values.length}`); }
+  if (to) { values.push(to); clauses.push(`purged_at <= $${values.length}`); }
+
+  values.push(clampLimit(limit));
+  const { rows } = await pool.query(
+    `SELECT id, source_id, source_table, record_id, customer_id, tenant_id, purged_fields, files_deleted, status, error_message, purged_at
+     FROM purge_events ${buildWhere(clauses, values)} ORDER BY id DESC LIMIT $${values.length}`,
+    values,
+  );
+  return rows;
+}
+
 async function listBackupStatus(pool, { from, to, limit } = {}) {
   const clauses = [];
   const values = [];
@@ -111,6 +128,64 @@ async function listBackupStatus(pool, { from, to, limit } = {}) {
     values,
   );
   return rows;
+}
+
+// Every vhost on the VPS shares one Nginx access_log, tailed into
+// server_logs with source='nginx' and the client IP under meta.ip (see
+// audit-log-shipper's parsers/nginxLine.js) — so this one aggregation
+// covers request volume across all production backends, not just this
+// portal.
+async function listIpActivity(pool, { hours = 24, limit = 200 } = {}) {
+  const { rows } = await pool.query(
+    `SELECT meta->>'ip' AS ip,
+            COUNT(*) AS request_count,
+            COUNT(*) FILTER (WHERE (meta->>'status')::int >= 400) AS error_count,
+            MIN(time) AS first_seen,
+            MAX(time) AS last_seen
+     FROM server_logs
+     WHERE source = 'nginx' AND meta ? 'ip' AND time >= now() - ($1::int * interval '1 hour')
+     GROUP BY meta->>'ip'
+     ORDER BY request_count DESC
+     LIMIT $2`,
+    [hours, clampLimit(limit)],
+  );
+  return rows;
+}
+
+async function listBlockedIps(pool) {
+  const { rows } = await pool.query(
+    `SELECT ip, reason, blocked_by, blocked_at FROM blocked_ips WHERE active = true ORDER BY blocked_at DESC`,
+  );
+  return rows;
+}
+
+async function blockIp(pool, { ip, reason, actor }) {
+  await pool.query(
+    `INSERT INTO blocked_ips (ip, reason, blocked_by, active, blocked_at, unblocked_at, unblocked_by)
+     VALUES ($1, $2, $3, true, now(), NULL, NULL)
+     ON CONFLICT (ip) DO UPDATE SET
+       reason = EXCLUDED.reason,
+       blocked_by = EXCLUDED.blocked_by,
+       active = true,
+       blocked_at = now(),
+       unblocked_at = NULL,
+       unblocked_by = NULL`,
+    [ip, reason || null, actor],
+  );
+}
+
+async function unblockIp(pool, { ip, actor }) {
+  await pool.query(
+    `UPDATE blocked_ips SET active = false, unblocked_at = now(), unblocked_by = $2 WHERE ip = $1`,
+    [ip, actor],
+  );
+}
+
+async function logIpBlockAudit(pool, { ip, action, reason, actor, detail }) {
+  await pool.query(
+    `INSERT INTO ip_block_audit_log (ip, action, reason, actor, detail) VALUES ($1, $2, $3, $4, $5)`,
+    [ip, action, reason || null, actor, detail || null],
+  );
 }
 
 async function rollup24h(pool) {
@@ -139,5 +214,6 @@ async function rollup24h(pool) {
 
 module.exports = {
   listAppLogs, listServerLogs, listPm2Health, listSystemHealth,
-  listConsentEvents, listBackupStatus, rollup24h, clampLimit,
+  listConsentEvents, listPurgeEvents, listBackupStatus, rollup24h, clampLimit,
+  listIpActivity, listBlockedIps, blockIp, unblockIp, logIpBlockAudit,
 };

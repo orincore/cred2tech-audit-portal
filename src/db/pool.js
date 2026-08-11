@@ -31,6 +31,29 @@ async function ensureSchema(pool) {
       time TIMESTAMPTZ NOT NULL DEFAULT now()
     );
     CREATE INDEX IF NOT EXISTS portal_login_attempts_time_idx ON portal_login_attempts (time);
+
+    CREATE TABLE IF NOT EXISTS blocked_ips (
+      id BIGSERIAL PRIMARY KEY,
+      ip TEXT NOT NULL UNIQUE,
+      reason TEXT,
+      blocked_by TEXT NOT NULL,
+      blocked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      active BOOLEAN NOT NULL DEFAULT true,
+      unblocked_by TEXT,
+      unblocked_at TIMESTAMPTZ
+    );
+    CREATE INDEX IF NOT EXISTS blocked_ips_active_idx ON blocked_ips (active);
+
+    CREATE TABLE IF NOT EXISTS ip_block_audit_log (
+      id BIGSERIAL PRIMARY KEY,
+      ip TEXT NOT NULL,
+      action TEXT NOT NULL,
+      reason TEXT,
+      actor TEXT NOT NULL,
+      detail TEXT,
+      time TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS ip_block_audit_log_time_idx ON ip_block_audit_log (time);
   `);
 }
 

@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import Head from 'next/head';
 import Nav from '../src/components/Nav';
+import DateTimeField from '../src/components/DateTimeField';
+import LogDetailPanel from '../src/components/LogDetailPanel';
 import { requireAuthPage } from '../src/auth/requireAuthPage';
 import { createPool } from '../src/db/pool';
 import { listAppLogs } from '../src/db/queries';
@@ -48,6 +50,7 @@ export default function AppLogs({ rows: initialRows, filters }) {
   const [rows, setRows] = useState(initialRows);
   const [form, setForm] = useState(filters);
   const [liveOn, setLiveOn] = useState(!(filters.from || filters.to));
+  const [expandedId, setExpandedId] = useState(null);
 
   useLiveChannel(
     'app_logs',
@@ -101,8 +104,8 @@ export default function AppLogs({ rows: initialRows, filters }) {
             <option value="fatal">fatal</option>
           </select>
           <input placeholder="search text" value={form.q} onChange={(e) => onFilterChange('q', e.target.value)} />
-          <input type="datetime-local" value={form.from} onChange={(e) => onFilterChange('from', e.target.value)} />
-          <input type="datetime-local" value={form.to} onChange={(e) => onFilterChange('to', e.target.value)} />
+          <DateTimeField label="from" value={form.from} onChange={(v) => onFilterChange('from', v)} />
+          <DateTimeField label="to" value={form.to} onChange={(v) => onFilterChange('to', v)} />
           <button type="submit" className="btn-primary">Filter</button>
           <a href={exportHref} className="export-link">Export CSV</a>
           <label className="live-toggle">
@@ -127,29 +130,43 @@ export default function AppLogs({ rows: initialRows, filters }) {
             <tbody>
               {rows.map((r) => {
                 const req = requestInfo(r.meta);
+                const isExpanded = expandedId === r.id;
                 return (
-                  <tr key={r.id}>
-                    <td className="col-time">{new Date(r.time).toLocaleString()}</td>
-                    <td>{r.app}</td>
-                    <td>
-                      <span className={`badge level-${r.level}`}>
-                        <span className="dot" aria-hidden="true" />
-                        {r.level}
-                      </span>
-                    </td>
-                    <td className="col-time">{req ? `${req.method} ${req.path}` : '—'}</td>
-                    <td>
-                      {req && req.status != null ? (
-                        <span className={`badge ${statusBadgeClass(req.status)}`}>
+                  <Fragment key={r.id}>
+                    <tr
+                      className={`log-row${isExpanded ? ' is-expanded' : ''}`}
+                      onClick={() => setExpandedId(isExpanded ? null : r.id)}
+                      title="Click to see the full log entry"
+                    >
+                      <td className="col-time">{new Date(r.time).toLocaleString()}</td>
+                      <td>{r.app}</td>
+                      <td>
+                        <span className={`badge level-${r.level}`}>
                           <span className="dot" aria-hidden="true" />
-                          {req.status}
+                          {r.level}
                         </span>
-                      ) : '—'}
-                    </td>
-                    <td className="col-time">{req && req.durationMs != null ? `${req.durationMs}ms` : '—'}</td>
-                    <td>{req?.user || '—'}</td>
-                    <td>{r.msg}</td>
-                  </tr>
+                      </td>
+                      <td className="col-time">{req ? `${req.method} ${req.path}` : '—'}</td>
+                      <td>
+                        {req && req.status != null ? (
+                          <span className={`badge ${statusBadgeClass(req.status)}`}>
+                            <span className="dot" aria-hidden="true" />
+                            {req.status}
+                          </span>
+                        ) : '—'}
+                      </td>
+                      <td className="col-time">{req && req.durationMs != null ? `${req.durationMs}ms` : '—'}</td>
+                      <td>{req?.user || '—'}</td>
+                      <td>{r.msg}</td>
+                    </tr>
+                    {isExpanded && (
+                      <tr className="log-detail-row">
+                        <td colSpan={8}>
+                          <LogDetailPanel row={r} messageField="msg" />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 );
               })}
               {rows.length === 0 && (

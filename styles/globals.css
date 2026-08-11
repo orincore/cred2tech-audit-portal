@@ -275,7 +275,6 @@ button, input, select {
 
 .filter-bar input[type="text"],
 .filter-bar input:not([type]),
-.filter-bar input[type="datetime-local"],
 .filter-bar select {
   background: var(--ink-900);
   border: 1px solid var(--rule);
@@ -285,6 +284,34 @@ button, input, select {
 }
 .filter-bar input::placeholder {
   color: var(--muted);
+}
+
+.datetime-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.datetime-field-label {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.datetime-field-inputs {
+  display: flex;
+  gap: 4px;
+}
+.datetime-field input[type="date"],
+.datetime-field input[type="time"] {
+  background: var(--ink-900);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 7px 8px;
+  color: var(--paper);
+  color-scheme: dark;
+}
+.datetime-field input[type="time"]:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .btn-primary {
@@ -401,6 +428,63 @@ button, input, select {
 .badge.level-error .dot, .badge.level-fatal .dot { background: var(--brick); }
 .badge.level-warn .dot { background: var(--amber); }
 .badge.level-info .dot, .badge.level-debug .dot { background: var(--verdigris); }
+
+.ledger tbody tr.log-row {
+  cursor: pointer;
+}
+.ledger tbody tr.log-row.is-expanded {
+  background: var(--ink-800);
+}
+.ledger tbody tr.log-row.is-expanded td {
+  border-bottom: none;
+}
+
+.log-detail-row td {
+  padding: 0;
+  background: var(--ink-900);
+}
+
+.log-detail {
+  padding: 14px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.log-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.log-detail-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.log-detail-pre {
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--ink-950);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--paper-dim);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.log-detail-stack {
+  color: var(--brick);
+  border-color: color-mix(in srgb, var(--brick) 40%, var(--rule));
+}
 .badge.level-error, .badge.level-fatal { color: #e3897c; }
 .badge.level-warn { color: #e0bd75; }
 
